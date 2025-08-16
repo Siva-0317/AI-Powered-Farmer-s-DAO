@@ -16,14 +16,15 @@ MODEL2_RF = os.path.join(MODELS_DIR, "model2_rf.joblib")
 # ---- FFN definition must match training ----
 class FFN(nn.Module):
     def __init__(self, input_dim):
-        super().__init__()
-        self.net = nn.Sequential(
+        super(FFN, self).__init__()
+        self.layers = nn.Sequential(
             nn.Linear(input_dim, 64), nn.ReLU(),
             nn.Linear(64, 32), nn.ReLU(),
             nn.Linear(32, 1), nn.Sigmoid()
         )
+
     def forward(self, x):
-        return self.net(x)
+        return self.layers(x)
 
 # load artifacts once
 scaler1 = joblib.load(MODEL1_SCALER)
