@@ -157,5 +157,3 @@ See [LICENSE](./LICENSE) for details.
 
 Inspired by the need for **transparent, inclusive, and AI-powered rural governance**.
 
-
-```
