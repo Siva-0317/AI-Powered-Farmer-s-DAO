@@ -1,81 +1,18 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { apiGet, apiPost } from '../api'
-import SharedFields from '../components/SharedFields'
-import Model2ExtraFields from '../components/Model2ExtraFields'
+import React,{useEffect, useState} from "react"; import { apiGet, apiPost } from "../api"; import { useNavigate } from "react-router-dom";
+export default function Claim({session}){ const nav=useNavigate(); const [lands,setLands]=useState([]); const [landId,setLandId]=useState(''); const [shared,setShared]=useState({}); const [extra,setExtra]=useState({}); const [msg,setMsg]=useState('');
+  useEffect(()=>{ if(!session) return; (async()=>{ const r=await apiGet(`/api/lands?farmer_id=${session.farmer_id}`); if(r.ok) setLands(r.data); else setMsg('Could not fetch lands') })() },[session]);
 
-export default function Claim({ session }){
-  const nav = useNavigate()
-  const [lands, setLands] = useState([])
-  const [landId, setLandId] = useState('')
-  const [shared, setShared] = useState({})
-  const [extra, setExtra] = useState({})
-  const [cropType, setCropType] = useState('')
-  const [res, setRes] = useState(null)
-  const [err, setErr] = useState(null)
-
-  useEffect(()=>{
-    if(!session){ nav('/login'); return }
-    (async()=>{
-      const q = await apiGet(`/api/lands?farmer_id=${session.farmer_id}`)
-      if(q.ok) setLands(q.data || [])
-    })()
-  }, [session])
-
-  const submit = async ()=>{
-    setErr(null); setRes(null)
-    if(!landId){ setErr('Select a land'); return }
-
-    const m2 = { ...extra }
-    if(cropType) m2.Crop_Type = cropType
-
-    const payload = {
-      farmer_id: session.farmer_id,
-      land_id: Number(landId),
-      model1: shared,
-      model2: m2
-    }
-
-    const r = await apiPost('/api/claims/submit', payload)
-    if(!r.ok) { setErr(r.error || 'claim failed'); return }
-    setRes(r.data)
+  async function checkPayout(){
+    if(!session) { setMsg('Login first'); return }
+    if(!landId) { setMsg('Select land'); return }
+    const payload={ registration_no: session.registration_no, land_id: Number(landId), model1: shared, model2: extra }
+    const r = await apiPost('/api/claims/submit', payload);
+    if(!r.ok){ setMsg('Err: '+(r.error||'')); return }
+    // show onchain tx if present
+    const on = r.data.onchain;
+    setMsg('Prediction: '+JSON.stringify(r.data, null, 2) + '\nOnchain: '+JSON.stringify(on));
+    nav('/payout', { state: { result: r.data } });
   }
 
-  const addLand = async () => {
-    const land_name = prompt('land name (e.g., siva-land1)')
-    const crop_type = prompt('Crop type (Wheat/Maize/Rice)')
-    if(!land_name || !crop_type) return
-    const r = await apiPost('/api/lands', { farmer_id: session.farmer_id, land_name, crop_type, location: '' })
-    if(r.ok){
-      const q = await apiGet(`/api/lands?farmer_id=${session.farmer_id}`)
-      if(q.ok) setLands(q.data)
-    } else setErr(JSON.stringify(r))
-  }
-
-  return (
-    <div>
-      <div className="card">
-        <h2>Submit Claim</h2>
-        <div>
-          <label>Select Land:
-            <select value={landId} onChange={e=>setLandId(e.target.value)}>
-              <option value="">Select</option>
-              {lands.map(l => <option key={l.id} value={l.id}>{l.land_name} — {l.crop_type}</option>)}
-            </select>
-            <button onClick={addLand} style={{marginLeft:12}}>+ Add Land</button>
-          </label>
-        </div>
-      </div>
-
-      <SharedFields values={shared} onChange={setShared} />
-      <Model2ExtraFields values={extra} onChange={setExtra} cropType={cropType} setCropType={setCropType} />
-
-      <div className="card">
-        <button onClick={submit}>Run Prediction & Submit</button>
-      </div>
-
-      {err && <div className="card"><pre>{err}</pre></div>}
-      {res && <div className="card"><h3>Result</h3><pre>{JSON.stringify(res, null, 2)}</pre></div>}
-    </div>
-  )
+  return (<div className="card"><h2>Submit Claim</h2><label>Select Land<select value={landId} onChange={e=>setLandId(e.target.value)}><option value="">Select</option>{lands.map(l=> <option key={l.id} value={l.id}>{l.land_name} - {l.crop_type}</option>)}</select></label><h3>Shared inputs (model1)</h3><label>NDVI<input onChange={e=>setShared({...shared,NDVI:parseFloat(e.target.value)})} /></label><label>SAVI<input onChange={e=>setShared({...shared,SAVI:parseFloat(e.target.value)})} /></label><label>Chlorophyll<input onChange={e=>setShared({...shared,Chlorophyll_Content:parseFloat(e.target.value)})} /></label><label>LAI<input onChange={e=>setShared({...shared,Leaf_Area_Index:parseFloat(e.target.value)})} /></label><label>Temp<input onChange={e=>setShared({...shared,Temperature:parseFloat(e.target.value)})} /></label><label>Humidity<input onChange={e=>setShared({...shared,Humidity:parseFloat(e.target.value)})} /></label><label>Rainfall<input onChange={e=>setShared({...shared,Rainfall:parseFloat(e.target.value)})} /></label><label>Soil Moisture<input onChange={e=>setShared({...shared,Soil_Moisture:parseFloat(e.target.value)})} /></label><h3>Extra (model2)</h3><label>Expected Yield<input onChange={e=>setExtra({...extra,Expected_Yield:parseFloat(e.target.value)})} /></label><label>Crop Stress Indicator<input onChange={e=>setExtra({...extra,Crop_Stress_Indicator:parseFloat(e.target.value)})} /></label><label>Canopy Coverage<input onChange={e=>setExtra({...extra,Canopy_Coverage:parseFloat(e.target.value)})} /></label><label>Pest Damage<input onChange={e=>setExtra({...extra,Pest_Damage:parseFloat(e.target.value)})} /></label><label>Crop Type<select onChange={e=>setExtra({...extra,Crop_Type:e.target.value})}><option>Wheat</option><option>Maize</option><option>Rice</option></select></label><div><button onClick={checkPayout}>Check Payout</button></div><pre>{msg}</pre></div>)
 }
