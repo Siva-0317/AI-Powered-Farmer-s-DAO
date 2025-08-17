@@ -71,7 +71,7 @@ pip install -r requirements.txt
 Run backend:
 
 bash
-python backend/main.py
+python backend/app.py
 # or (if using FastAPI/uvicorn)
 uvicorn backend.app:app --reload --port 8000
 
