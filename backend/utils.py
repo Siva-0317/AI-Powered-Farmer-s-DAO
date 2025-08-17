@@ -1,3 +1,6 @@
+# backend/utils.py
+from flask import jsonify
+
 def ok(data=None, **kwargs):
     base = {"ok": True}
     if data is not None:
@@ -6,4 +9,4 @@ def ok(data=None, **kwargs):
     return base
 
 def err(msg, code=400):
-    return {"ok": False, "error": msg, "code": code}, code
+    return jsonify({"ok": False, "error": msg}), code
