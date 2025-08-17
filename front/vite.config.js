@@ -6,12 +6,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // forward requests starting with /api to the Flask backend
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      }
+      '/api': 'http://localhost:8080',
+      '/uploads': 'http://localhost:8080'
     }
   }
 })
